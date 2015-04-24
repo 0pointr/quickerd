@@ -1,0 +1,9 @@
+employee(eid,dpt_id,name ,sex,age)
+car(name,model)
+salary(eid,salary)
+dept(dpt_id,name)
+#
+employee>dept,works in,1:n
+employee>salary,is paid,n:m
+employee>car,buys,m:n
+salary>car,matches,n:1
