@@ -85,7 +85,7 @@ char *read_file_into_mem(const char *infile)
     fread(mem, 1, bytes, fp);
     fclose(fp);
 
-    *(mem+bytes) = '\0';
+    *(mem+bytes) = EOF;
     return mem;
   }
   else
@@ -107,7 +107,9 @@ char *getline_from_mem(char **looper)
     { temp = realloc(temp, tot_alloc+MEM_CHUNK); tot_alloc += MEM_CHUNK; }
     temp[indx++] = *((*looper)++);
   }
+  if (indx == 0 && **looper != EOF) temp[indx++] = '#';
   temp[indx] = '\0';
+
   (*looper)++; /* point to next line */
   return temp;
 }
@@ -158,8 +160,8 @@ node **parse_content(char *mem)
     
     int tot_tb_alloc = MEM_CHUNK;
     char *loop = mem;
-    const char *reg_table_spec = "^[a-zA-Z0-9 _^(]*\\([a-zA-Z0-9, _]+\\)$";
-    const char *reg_rel_spec = "^[a-zA-Z0-9 _]+>[a-zA-Z0-9 _]+,[a-zA-Z0-9 _]+,[1mn]{1}:[1mn]{1}$";
+    const char *reg_table_spec = "^[a-zA-Z0-9 _.^(]*\\([a-zA-Z0-9, _.]+\\)$";
+    const char *reg_rel_spec = "^[a-zA-Z0-9 ._]+>[a-zA-Z0-9 ._]+,[a-zA-Z0-9 ._()]+,[1mn]{1}:[1mn]{1}$";
     char *work_buff = NULL;
     bool get_tbname;
     int tb_indx = 0, col_indx = 0;

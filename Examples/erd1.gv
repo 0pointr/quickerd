@@ -1,0 +1,64 @@
+graph main {
+    ranksep=0.75;
+    rankdir=TB;
+    layout=dot;
+    constraint=true;
+    
+subgraph "employee" {
+node [shape=oval]
+"employee_employee000" [label="employee",shape=box];
+"employee_eid001" [label="eid"];
+"employee_dpt_id002" [label="dpt_id"];
+"employee_name 003" [label="name "];
+"employee_sex004" [label="sex"];
+"employee_age005" [label="age"];
+"employee_employee000" -- "employee_eid001";
+"employee_employee000" -- "employee_dpt_id002";
+"employee_employee000" -- "employee_name 003";
+"employee_employee000" -- "employee_sex004";
+"employee_employee000" -- "employee_age005";
+}
+
+subgraph "car" {
+node [shape=oval]
+"car_car000" [label="car",shape=box];
+"car_name001" [label="name"];
+"car_model002" [label="model"];
+"car_car000" -- "car_name001";
+"car_car000" -- "car_model002";
+}
+
+subgraph "salary" {
+node [shape=oval]
+"salary_salary000" [label="salary",shape=box];
+"salary_eid001" [label="eid"];
+"salary_salary002" [label="salary"];
+"salary_salary000" -- "salary_eid001";
+"salary_salary000" -- "salary_salary002";
+}
+
+subgraph "dept" {
+node [shape=oval]
+"dept_dept000" [label="dept",shape=box];
+"dept_dpt_id001" [label="dpt_id"];
+"dept_name002" [label="name"];
+"dept_dept000" -- "dept_dpt_id001";
+"dept_dept000" -- "dept_name002";
+}
+
+rel0 [label="works in", shape=diamond];
+"employee_employee000" -- rel0 [headport=n,headlabel=1,labeldistance=2];
+rel0 -- "dept_dept000" [tailport=s,taillabel=n,labeldistance=2];
+
+rel1 [label="is paid", shape=diamond];
+"employee_employee000" -- rel1 [headport=n,headlabel=n,labeldistance=2];
+rel1 -- "salary_salary000" [tailport=s,taillabel=m,labeldistance=2];
+
+rel2 [label="buys", shape=diamond];
+"employee_employee000" -- rel2 [headport=n,headlabel=m,labeldistance=2];
+rel2 -- "car_car000" [tailport=s,taillabel=n,labeldistance=2];
+
+rel3 [label="matches", shape=diamond];
+"salary_salary000" -- rel3 [headport=n,headlabel=n,labeldistance=2];
+rel3 -- "car_car000" [tailport=s,taillabel=1,labeldistance=2];
+}

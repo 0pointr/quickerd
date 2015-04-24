@@ -1,0 +1,12 @@
+Employee(Name,Sex,EmpID,Join Date,Tel No,Address)
+Designation(Name,DesigID)
+Department(DeptID,Name)
+Patient Treatement History(Prescription,Date,Time,Spcl. Notes)
+Patient Date Record(TreatmentID,Age,DOA,DOD,Whether Admitted)
+Patient Info(Name,PID,Tel. No,Sex)
+
+Employee>Designation,Designation (EmpID),1:1
+Employee>Department,Works In (EmpID),1:1
+Employee>Patient Treatement History,Supervised By (EmpID),1:1
+Patient Treatement History>Patient Date Record,Medical History (TID),n:1
+Patient Date Record>Patient Info,Date Info (PID),n:1

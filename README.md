@@ -42,15 +42,15 @@ As simple as *that*.
 
 Once you have the description file (say erd.txt) ready, run quickerd as
 ```
-quickerd erd.txt out.txt
+quickerd erd.txt out.gv
 ```
-`out.txt` is your input file for graphviz. Now, to generate the actual graph i.e. the ERD, run
+`out.gv` is your input file for graphviz. Now, to generate the actual graph i.e. the ERD, run
 ```
-dot -Tpng out.txt > out.png
+dot -Tpng out.gv > out.png
 ```
 This will save the ERD in png format to out.png .
 If you're on Windows, open `out.txt` in [graphviz](http://www.graphviz.org/Download_windows.php).
-
+---
 #### Can I copy/modify/distribute ?
 Yes, of course, provided you keep the original copyright information intact.  
 ___
@@ -58,11 +58,3 @@ ___
   * Syntax checking is rigid, in the sense that no part of a specification may be omitted. On error, quickerd will print the line of error and exit.
   * Other than syntax errors, quickerd will also whine if an undefined table is used in a relationship.
   * Feature wise, quickerd is rather lacking. It doesn't provided all the symantics the ERD specification allows. It works well for small needs but could use some more love.
-
-
-
-
-
-
-
-sasas
