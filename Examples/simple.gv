@@ -1,0 +1,34 @@
+graph main {
+    ranksep=0.75;
+    rankdir=TB;
+    layout=dot;
+    constraint=true;
+    
+subgraph "employee" {
+node [shape=oval]
+"employee_employee000" [label="employee",shape=box];
+"employee_eid001" [label="eid"];
+"employee_dpt_id002" [label="dpt_id"];
+"employee_name003" [label="name"];
+"employee_sex004" [label="sex"];
+"employee_age005" [label="age"];
+"employee_employee000" -- "employee_eid001";
+"employee_employee000" -- "employee_dpt_id002";
+"employee_employee000" -- "employee_name003";
+"employee_employee000" -- "employee_sex004";
+"employee_employee000" -- "employee_age005";
+}
+
+subgraph "salary" {
+node [shape=oval]
+"salary_salary000" [label="salary",shape=box];
+"salary_eid001" [label="eid"];
+"salary_salary002" [label="salary"];
+"salary_salary000" -- "salary_eid001";
+"salary_salary000" -- "salary_salary002";
+}
+
+rel0 [label="is paid", shape=diamond];
+"employee_employee000" -- rel0 [headport=n,headlabel=1,labeldistance=2];
+rel0 -- "salary_salary000" [tailport=s,taillabel=1,labeldistance=2];
+}

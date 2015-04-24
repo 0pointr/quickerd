@@ -1,0 +1,4 @@
+employee(eid,dpt_id,name,sex,age)
+salary(eid,salary)
+#
+employee>salary,is paid,1:1
