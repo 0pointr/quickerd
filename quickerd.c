@@ -3,7 +3,7 @@
 * Author :: debd92 [at] gmail.com
 *           Copyright (C) 2015 
 * Released under           :: GPL v3
-* Release date (v0.4 beta) :: 2015-04-24
+* Release date (v0.1) :: 2015-04-24
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
