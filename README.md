@@ -49,7 +49,8 @@ quickerd erd.txt out.gv
 dot -Tpng out.gv > out.png
 ```
 This will save the ERD in png format to out.png .
-If you're on Windows, open `out.txt` in [graphviz](http://www.graphviz.org/Download_windows.php).
+#####If you're on Windows, open `out.txt` in [graphviz](http://www.graphviz.org/Download_windows.php).  
+
 ---
 #### Can I copy/modify/distribute ?
 Yes, of course, provided you keep the original copyright information intact.  
