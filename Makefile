@@ -16,6 +16,7 @@ all : $(EXECUTABLE)
 debug : CFLAGS=-c -ggdb
 
 ifeq ($(OS),Windows_NT)
+		debug : CFLAGS=$(CFLAGS) -I pcre/include
 		debug : LDFLAGS=-L pcre/lib -lpcre
 endif
 

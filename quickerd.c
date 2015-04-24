@@ -208,7 +208,7 @@ node **parse_content(char *mem)
                 table_arr[tb_indx][col_indx] = calloc(strlen(tmp), sizeof(char));
                 strcpy(table_arr[tb_indx][col_indx], tmp);
                 */
-                table_arr[tb_indx][col_indx].nkme = tmp;
+                table_arr[tb_indx][col_indx].name = tmp;
                 if (get_tbname) { 
                     tb_name = tmp;
                     len = strlen(tmp);
