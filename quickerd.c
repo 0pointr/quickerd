@@ -384,9 +384,9 @@ void write_gv_output(node **table, char *outfile)
             if (src && dst) {
                 count += sane_snprintf(&outbuff, &tot_alloc, count, "\nrel%d [label=\"%s\", shape=diamond];\n",
                                   rel_indx, table[i][2].name);
-                count += sane_snprintf(&outbuff, &tot_alloc, count, "\"%s\" -- rel%d [headport=n,headlabel=%c,labeldistance=2];\n",
+                count += sane_snprintf(&outbuff, &tot_alloc, count, "\"%s\" -- rel%d [headport=n,headlabel=%c,labeldistance=2,color=red];\n",
                                   src, rel_indx, table[i][3].from);
-                count += sane_snprintf(&outbuff, &tot_alloc, count, "rel%d -- \"%s\" [tailport=s,taillabel=%c,labeldistance=2];\n",
+                count += sane_snprintf(&outbuff, &tot_alloc, count, "rel%d -- \"%s\" [tailport=s,taillabel=%c,labeldistance=2,color=red];\n",
                                   rel_indx, dst, table[i][3].to);
 
                 fwrite(outbuff, 1, count, fp);
