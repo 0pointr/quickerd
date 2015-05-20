@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
@@ -183,7 +184,7 @@ node **parse_content(char *mem)
     int tot_tb_alloc = MEM_CHUNK;
     char *loop = mem;
     const char *reg_table_spec = "^[a-zA-Z0-9 _.^(]*\\([a-zA-Z0-9, _.]+\\)$";
-    const char *reg_rel_spec = "^[a-zA-Z0-9 ._]+>[a-zA-Z0-9 ._]+,[a-zA-Z0-9 ._()]+,[1mn]{1}:[1mn]{1}$";
+    const char *reg_rel_spec = "^[a-zA-Z0-9 ._]+>[a-zA-Z0-9 ._]+,[a-zA-Z0-9 ._()]+,[1mnMN]{1}:[1mnMN]{1}$";
     char *work_buff = NULL;
     bool get_tbname;
     int tb_indx = 0, col_indx = 0;
@@ -290,6 +291,29 @@ char *get_uname(node **table, char *key)
     return NULL;
 }
 
+int sane_snprintf(char **buff, int *total, int count, char *fmt, ...)
+{
+    int s, r;
+    va_list ap;
+    va_start(ap, fmt);
+    r = vsnprintf(NULL, 0, fmt, ap);
+    va_end(ap);
+
+    s = r;
+    if (s+1 > (*total-count)) {
+        s = (s+1 < OUTBUFF_CHUNK) ? OUTBUFF_CHUNK : s+1;
+        *buff = realloc(*buff, *total+s);
+        if (! *buff ) hndl_fatal_error("realloc");
+        *total += s;
+    }
+
+    va_start(ap, fmt);
+    vsnprintf((*buff)+count, s+1, fmt, ap);
+    va_end(ap);
+
+    return r;
+}
+
 void write_gv_output(node **table, char *outfile)
 {
 #ifndef __gui
@@ -336,27 +360,20 @@ void write_gv_output(node **table, char *outfile)
     
     for (i=0; table[i]; i++) {
         if (table[i][0].type == TB_SPEC) {
-            count += snprintf(outbuff, tot_alloc-count, "\nsubgraph \"%s\" {\nnode [shape=oval]\n",
+            count += sane_snprintf(&outbuff, &tot_alloc, count, "\nsubgraph \"%s\" {\nnode [shape=oval]\n",
                              table[i][0].name);
-            count += snprintf(outbuff+count, tot_alloc-count, "\"%s\" [label=\"%s\",shape=box];\n",
+            count += sane_snprintf(&outbuff, &tot_alloc, count, "\"%s\" [label=\"%s\",shape=box];\n",
                               table[i][0].uname, table[i][0].name);
             for (j=1; table[i][j].name; j++) {
-                count += snprintf(outbuff+count, tot_alloc-count, "\"%s\" [label=\"%s\"];\n",
+                count += sane_snprintf(&outbuff, &tot_alloc, count, "\"%s\" [label=\"%s\"];\n",
                                   table[i][j].uname, table[i][j].name);
 
-                if (count % OUTBUFF_CHUNK == 0) {
-                    outbuff = realloc(outbuff, tot_alloc+OUTBUFF_CHUNK);
-                }
             }
             for (j=1; table[i][j].name; j++) {
-                count += snprintf(outbuff+count, tot_alloc-count, "\"%s\" -- \"%s\";\n",
+                count += sane_snprintf(&outbuff, &tot_alloc, count, "\"%s\" -- \"%s\";\n",
                                   table[i][0].uname, table[i][j].uname);
-
-                if (count % OUTBUFF_CHUNK == 0) {
-                    outbuff = realloc(outbuff, tot_alloc+OUTBUFF_CHUNK);
-                }
             }
-            count += snprintf(outbuff+count, tot_alloc-count, "}\n");
+            count += sane_snprintf(&outbuff, &tot_alloc, count, "}\n");
             fwrite(outbuff, 1, count, fp);
             count = 0;
         }
@@ -365,29 +382,30 @@ void write_gv_output(node **table, char *outfile)
             char *dst = get_uname(table, table[i][1].name);
 
             if (src && dst) {
-                count += snprintf(outbuff+count, tot_alloc-count, "\nrel%d [label=\"%s\", shape=diamond];\n",
+                count += sane_snprintf(&outbuff, &tot_alloc, count, "\nrel%d [label=\"%s\", shape=diamond];\n",
                                   rel_indx, table[i][2].name);
-                count += snprintf(outbuff+count, tot_alloc-count, "\"%s\" -- rel%d [headport=n,headlabel=%c,labeldistance=2];\n",
+                count += sane_snprintf(&outbuff, &tot_alloc, count, "\"%s\" -- rel%d [headport=n,headlabel=%c,labeldistance=2];\n",
                                   src, rel_indx, table[i][3].from);
-                count += snprintf(outbuff+count, tot_alloc-count, "rel%d -- \"%s\" [tailport=s,taillabel=%c,labeldistance=2];\n",
+                count += sane_snprintf(&outbuff, &tot_alloc, count, "rel%d -- \"%s\" [tailport=s,taillabel=%c,labeldistance=2];\n",
                                   rel_indx, dst, table[i][3].to);
 
-                if (count % OUTBUFF_CHUNK == 0) {
-                    outbuff = realloc(outbuff, tot_alloc+OUTBUFF_CHUNK);
-                }
                 fwrite(outbuff, 1, count, fp);
                 count = 0;
                 rel_indx++;
             }
-            else fprintf(stderr, "Unknown table in relationship %d : %s -> %s\nTable \"%s\" not defined\n",
+            else { fprintf(stderr, "Unknown table in relationship %d : %s -> %s\nTable \"%s\" not defined\n",
                          rel_indx+1, table[i][0].name, table[i][1].name,
                          (src ? table[i][1].name : table[i][0].name));
+                    fclose(fp);
+                    free(outbuff);
+                    return;
+            }
         }
     }
     fputc('}', fp); /* brings closure*/
 
-    free(outbuff);
     fclose(fp);
+    free(outbuff);
 }
 
 void freemem(node **table)
