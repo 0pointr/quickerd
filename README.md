@@ -19,7 +19,7 @@ Of course, you'll also need to install [graphviz](http://www.graphviz.org/Downlo
 How to use ?
 ---
 To use quickerd you first have to write a ERD description file.
-A ERD descr. file contains two basic elements - 
+A ERD descr. file contains three basic elements - 
 * Variable declaration / definition
 * Table specification
 * Relationship Specification
