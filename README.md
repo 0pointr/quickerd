@@ -73,6 +73,7 @@ Yes, of course, provided you keep the original copyright information intact.
 ___
 * Notes
   * Syntax checking is rigid, in the sense that no part of a specification may be omitted. On error, quickerd will print the line of error and exit.
+    Except for variable names, there can be arbrtitary number of space/s within and around a string. The spaces within will be preserved.
   * Other than syntax errors, quickerd will also whine if an undefined table is used in a relationship.
   * Variables have no specific identifiers that identify them spcecifically as veriables. Thus any string not already defined as a variable is used as a literal
     string and classified according to its context.
