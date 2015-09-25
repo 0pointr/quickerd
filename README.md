@@ -24,7 +24,7 @@ A ERD descr. file contains two basic elements -
 * Table specification
 * Relationship Specification
 
-**Variable Declaration and Definition**
+**Variable Declaration and Definition**  
 *syntax*:`var_name : value`
 
 **Table Specification**  
@@ -47,11 +47,10 @@ Starting from quickerd v0.2, variable substitution is supported. The above descr
 ```
 emp : employee
 sal : salary
-
 emp (eid, dpt_id, name,sex, age)
 sal (eid, salary)
 #
-empl > sal, is paid,1:1
+empl > sal, is paid, 1:1
 ```
 As simple as *that*.
 
