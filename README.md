@@ -64,7 +64,7 @@ dot -Tpng out.gv > out.png
 ```
 This will save the ERD in png format to out.png .
 #####If you're on Windows, open `out.gv` in [graphviz](http://www.graphviz.org/Download_windows.php).  
-This looks like:![This looks like :](https://raw.githubusercontent.com/0pointr/quickerd/master/Examples/simple.png)  
+This looks like:  ![This looks like :](https://raw.githubusercontent.com/0pointr/quickerd/master/Examples/simple.png)  
 See other examples [here](https://github.com/0pointr/quickerd/tree/master/Examples).  
 
 ---
