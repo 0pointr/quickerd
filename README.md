@@ -20,8 +20,12 @@ How to use ?
 ---
 To use quickerd you first have to write a ERD description file.
 A ERD descr. file contains two basic elements - 
+* Variable declaration / definition
 * Table specification
 * Relationship Specification
+
+**Variable Declaration and Definition**
+*syntax*:`var_name : value`
 
 **Table Specification**  
 *syntax*: `table name`(`col1`[,`col2`,...])  
@@ -38,6 +42,17 @@ employee>salary,is paid,1:1
 ```
 is a valid ERD description file specifying two tables: employee and salary. It also specifies that table employee has a 1 to 1 relation to the table salary which is named 'is paid'.
 Lines beginning with '#' are ignored.
+
+Starting from quickerd v0.2, variable substitution is supported. The above description could also be written as
+```
+emp : employee
+sal : salary
+
+emp (eid, dpt_id, name,sex, age)
+sal (eid, salary)
+#
+empl > sal, is paid,1:1
+```
 As simple as *that*.
 
 Once you have the description file (say erd.txt) ready, run quickerd as
@@ -60,4 +75,6 @@ ___
 * Notes
   * Syntax checking is rigid, in the sense that no part of a specification may be omitted. On error, quickerd will print the line of error and exit.
   * Other than syntax errors, quickerd will also whine if an undefined table is used in a relationship.
+  * Variables have no specific identifiers that identify them spcecifically as veriables. Thus any string not already defined as a variable is used as a literal
+    string and classified according to its context.
   * Feature wise, quickerd is rather lacking. It doesn't provided all the symantics the ERD specification allows. It works well for small needs but could use some more love.

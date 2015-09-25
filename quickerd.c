@@ -3,7 +3,8 @@
 * Author :: debd92 [at] gmail.com
 *           Copyright (C) 2015 
 * Released under           :: GPL v3
-* Release date (v0.1) :: 2015-04-24
+* Release date (v0.1) :: 2015-04-24 (initial)
+* Release date (v0.2) :: 2015-05-25 (variable + bug fixes)
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -36,6 +37,7 @@
 #endif
 
 #define MEM_CHUNK 32
+#define HTAB_MAX 1024
 #define OUTBUFF_CHUNK 1024
 #define MAX_ERR_LEN 256
 
@@ -47,7 +49,12 @@ struct node_t {
     char to, from;  /* cardinality */
 };
 
+struct var_decl_record {
+    char *var, *val;
+};
+
 typedef struct node_t node;
+typedef struct var_decl_record var_record;
 
 int hndl_fatal_error(const char* func)
 {
@@ -137,6 +144,33 @@ char *getline_from_mem(char **looper)
   return temp;
 }
 
+void chop_leadntrail (char *str, int sz)
+{
+    int l=0, t=0;
+    char *start = str;
+    char *end = str+sz-1;
+
+    while (*start++ == ' ')
+        l++;
+    
+    while (*end-- == ' ')
+        t++;
+
+    *(str+sz-t) = 0;
+
+    int k;
+    if (l) {
+        sz -= t;
+
+        for (k = l; k < sz; k++)
+            *(str+k-l) = *(str+k);
+        
+        *(str+sz-l) = 0;
+    }
+        
+    return;
+}
+
 char *split(char *str, char *delim, bool reset)
 {
     static int j=0;
@@ -172,7 +206,58 @@ char *split(char *str, char *delim, bool reset)
     char *substr = calloc(i+2, sizeof(char));
     strncpy(substr, str+j, i);
     j += i;
+    chop_leadntrail(substr, i);
     return substr;
+}
+
+int get_index (var_record **vrec, int sz, char *var, int *dup_at)
+{
+    unsigned long hash = 5381;
+    char *key = var;
+    int c;
+
+    while (c = *key++)
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    hash &= 0x0000EFFF;
+    int indx = hash % sz;
+    int orig_indx = indx;
+
+    if ( vrec[indx] ) {
+        /* open addressing */
+        for (indx; indx < sz; indx++) {
+            if (! vrec[indx] ) break;
+            if (! strcmp(vrec[indx]->var, var) )
+                { *dup_at = indx; return -1; }
+        }
+    }
+
+    if (indx == sz) return sz+1;
+    return indx;
+}
+
+int make_entry (var_record **vrec, int *rec_sz, char *key, char *val)
+{
+    int dup;
+    int indx = get_index(vrec, *rec_sz, key, &dup);
+    
+    /* duplicate */
+    if (indx == -1) return -1;
+
+    if (indx > *rec_sz) {
+        fprintf(stderr, "Hash table full. Aborting..\n");
+        exit(1);
+        /*
+        vrec = realloc(vrec, (*rec_sz + MEM_CHUNK) * sizeof(var_record *));
+        if (! *vrec )
+            hndl_fatal_error("realloc");
+        *rec_sz += MEM_CHUNK;
+        */
+    }
+    
+    vrec[indx] = calloc(1, sizeof(var_record));
+    vrec[indx]->var = key;
+    vrec[indx]->val = val;
 }
 
 node **parse_content(char *mem)
@@ -180,41 +265,73 @@ node **parse_content(char *mem)
     node **table_arr = calloc(MEM_CHUNK, sizeof(node *));
     if (!table_arr)
         hndl_fatal_error("calloc");
+    var_record **vrec = calloc(HTAB_MAX, sizeof(var_record *));
+    if (!vrec)
+        hndl_fatal_error("calloc");
+    memset(vrec, 0, HTAB_MAX * sizeof(var_record *)); /* windows fix */
     
     int tot_tb_alloc = MEM_CHUNK;
+    int tot_var_alloc = HTAB_MAX;
+    int tot_col_alloc = MEM_CHUNK;
     char *loop = mem;
-    const char *reg_table_spec = "^[a-zA-Z0-9 _.^(]*\\([a-zA-Z0-9, _.]+\\)$";
-    const char *reg_rel_spec = "^[a-zA-Z0-9 ._]+>[a-zA-Z0-9 ._]+,[a-zA-Z0-9 ._()]+,[1mnMN]{1}:[1mnMN]{1}$";
+    const char *reg_var_decl = "^[a-zA-Z0-9 _.]+:[a-zA-Z0-9 _.]+$";
+    const char *reg_table_spec = "^[a-zA-Z0-9 _.^(]+\\([a-zA-Z0-9, _.]+\\)$";
+    const char *reg_rel_spec = "^[a-zA-Z0-9 ._]+>[a-zA-Z0-9 ._]+,[a-zA-Z0-9 ._()]+,[ ]*[1mnMN]{1}[ ]*:[ ]*[1mnMN]{1}[ ]*$";
     char *work_buff = NULL;
     bool get_tbname;
-    int tb_indx = 0, col_indx = 0;
+    int tb_indx = 0, col_indx = 0, hindx = 0;
     int line_no=1;
 
     while ( (work_buff = getline_from_mem(&loop)) && *work_buff ) {
+        /* comment lines */
         if (*work_buff == '#') {
             free(work_buff);
             work_buff = NULL;
             line_no++;
             continue;
         }
-        int tot_col_alloc = MEM_CHUNK;
-        if ( handle_regex(work_buff, reg_table_spec, 0) ) { /* parse table specs */
+        /* variable declaration */
+        if ( handle_regex(work_buff, reg_var_decl, 0) ) {
+            char *delim = ":";
+            char *key = NULL, *val = NULL;
+
+            key = split(work_buff, delim, false);
+            val = split(work_buff, delim, false);
+            split(work_buff, delim, false);
+
+            if ( make_entry(vrec, &tot_var_alloc, key, val) == -1 ) {
+                fprintf(stderr, "Variable \"%s\" used for two different values. Ignoring..", key);
+                free(key);
+                free(val);
+            }
+        }
+         /* parse table specs */
+        else if ( handle_regex(work_buff, reg_table_spec, 0) ) {
+
             get_tbname = true;
             table_arr[tb_indx] = calloc(MEM_CHUNK, sizeof(node));
             int len;
             char *tmp = NULL, *tb_name;
             char *delim = "(,)";
+
             while ( (tmp = split(work_buff, delim, false)) ) {
                 /*
                 table_arr[tb_indx][col_indx] = calloc(strlen(tmp), sizeof(char));
                 strcpy(table_arr[tb_indx][col_indx], tmp);
                 */
-                table_arr[tb_indx][col_indx].name = tmp;
+                /* variable substitution */
+                if ( get_index(vrec, tot_var_alloc, tmp, &hindx) == -1 ) {
+                    free(tmp);
+                    tmp = calloc(1, strlen(vrec[hindx]->val)+1);
+                    strcpy(tmp, vrec[hindx]->val);
+                }
                 if (get_tbname) { 
                     tb_name = tmp;
-                    len = strlen(tmp);
+                    len = strlen(tb_name);
                     get_tbname = false;
                 }
+                table_arr[tb_indx][col_indx].name = tmp;
+
                 int sz = len+strlen(tmp)+7;
                 table_arr[tb_indx][col_indx].uname = calloc(sz, sizeof(char));
                 snprintf(table_arr[tb_indx][col_indx].uname, sz-1, "%s_%s%.3d", tb_name, tmp, col_indx);
@@ -227,26 +344,46 @@ node **parse_content(char *mem)
                 }
             }
         }
-        else if ( handle_regex(work_buff, reg_rel_spec, 0) ) { /* parse relation specs */
+        /* parse relation specs */
+        else if ( handle_regex(work_buff, reg_rel_spec, 0) ) {
+
             table_arr[tb_indx] = calloc(MEM_CHUNK, sizeof(node));
             char *tmp = NULL;
             char *delim = ">,";
+
             while ( (tmp = split(work_buff, delim, false)) ) {
+                if ( /*!col_indx &&*/ (get_index(vrec, tot_var_alloc, tmp, &hindx) == -1) ) {
+                    /*
+                     * if value of a variable is stored at one place and
+                     * all ptrs ref to this block, free can be hazordous
+                     * hence, make copies
+                    */
+                    free(tmp);
+                    tmp = calloc(1, strlen(vrec[hindx]->val)+1);
+                    strcpy(tmp, vrec[hindx]->val);
+                }
                 table_arr[tb_indx][col_indx].name = tmp;
                 table_arr[tb_indx][col_indx].uname = NULL;
                 table_arr[tb_indx][col_indx].type = REL_SPEC;
+
                 if (col_indx == 3) {          /* cardinality */
                     char *relc = NULL;
+
                     relc = split(tmp, ":", true);
                     table_arr[tb_indx][col_indx].from = relc[0];
                     free(relc);
+
                     relc = split(tmp, ":", false);
                     table_arr[tb_indx][col_indx].to = relc[0];
                     free(relc);
+
+                    split(tmp, ":", false);
+                    col_indx++;
+                    break;      /* this is the last element. */
                 }
                 col_indx++;
             }
-            /* no reallocation needed since regex already verifies there can be 3 cols max*/
+            /* no reallocation needed since regex already verifies max no of cols */
         }
         else {
             fprintf(stderr, "Wrong syntax in file on line: %d\n", line_no);
@@ -254,15 +391,17 @@ node **parse_content(char *mem)
             return NULL;
         }
 
-        table_arr[tb_indx][col_indx].name = NULL;  /* since windows doesnt zero out callocs */
+        if (table_arr[tb_indx]) {
+            table_arr[tb_indx][col_indx].name = NULL;  /* windows doesnt zero out callocs */
+            tb_indx++;
+        }
 
-        tb_indx++;
         col_indx = 0;
         free(work_buff);
         work_buff = NULL;
         line_no++;
 
-        if (tb_indx % MEM_CHUNK == 0) {
+        if (tb_indx && (tb_indx % MEM_CHUNK == 0)) {
             table_arr = realloc(table_arr, (tot_tb_alloc+MEM_CHUNK)*sizeof(node *));
             tot_tb_alloc += MEM_CHUNK;
         }
@@ -274,6 +413,16 @@ node **parse_content(char *mem)
         free(table_arr);
         table_arr = NULL;
     }
+
+    int x;
+    for (x = 0; x<tot_var_alloc; x++)
+        if (vrec[x]) {
+            free(vrec[x]->var);
+            free(vrec[x]->val);
+            free(vrec[x]);
+        }
+    free(vrec);
+
     return table_arr;
 }
 
@@ -281,11 +430,16 @@ char *get_uname(node **table, char *key)
 {
     int i, j;
     for (i=0; table[i]; i++) {
+        /*
         for (j=0; table[i][j].name; j++) {
             if (table[i][j].type == REL_SPEC) continue;
             if (! strcmp(table[i][j].name, key) )
                 return table[i][j].uname;
         }
+        */
+        if (table[i][0].type == REL_SPEC) continue;
+        if (! strcmp(table[i][0].name, key) )
+            return table[i][0].uname;
     }
 
     return NULL;
@@ -393,7 +547,7 @@ void write_gv_output(node **table, char *outfile)
                 count = 0;
                 rel_indx++;
             }
-            else { fprintf(stderr, "Unknown table in relationship %d : %s -> %s\nTable \"%s\" not defined\n",
+            else { fprintf(stderr, "Unknown table in relationship %d : \"%s\" -> \"%s\"\nTable \"%s\" not defined\n",
                          rel_indx+1, table[i][0].name, table[i][1].name,
                          (src ? table[i][1].name : table[i][0].name));
                     fclose(fp);
@@ -415,6 +569,7 @@ void freemem(node **table)
         for (j=0; table[i][j].name; j++) {
             free(table[i][j].name);
             free(table[i][j].uname);
+            table[i][j].name = NULL;
         }
         free(table[i]);
     }

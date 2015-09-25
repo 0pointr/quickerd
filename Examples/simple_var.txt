@@ -1,0 +1,8 @@
+emp : employee
+sal : salary
+ip : is_paid
+
+emp (eid,dpt_id,name,sex,age)
+sal (eid,salary)
+#
+emp > sal, ip, 1:1
